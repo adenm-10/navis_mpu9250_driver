@@ -371,7 +371,7 @@ void MPU9250Sensor::calibrate()
   gyro_y_cov_ = compute_variance(gy_samples, gyro_y_offset_);
   gyro_z_cov_ = compute_variance(gz_samples, gyro_z_offset_);
 
-  accel_x_cov_ = compute_variance(ax_samples, accel_x_offset_ + GRAVITY);
+  accel_x_cov_ = compute_variance(ax_samples, accel_x_offset_);
   accel_y_cov_ = compute_variance(ay_samples, accel_y_offset_);
   accel_z_cov_ = compute_variance(az_samples, accel_z_offset_ + GRAVITY);
 
