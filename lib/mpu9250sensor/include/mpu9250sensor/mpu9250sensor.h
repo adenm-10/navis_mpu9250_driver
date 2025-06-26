@@ -98,7 +98,8 @@ class MPU9250Sensor {
   const std::unordered_map<int, int> ACCEL_SENS_MAP{{2, 16384}, {4, 8192}, {8, 4096}, {16, 2048}};
   const std::unordered_map<int, double> GYRO_SENS_MAP{
       {250, 131}, {500, 65.5}, {1000, 32.8}, {2000, 16.4}};
-  static constexpr int CALIBRATION_COUNT{1000};
+  // static constexpr int CALIBRATION_COUNT{1000};
+  static constexpr int CALIBRATION_COUNT{500};
 };
 
 #endif  // MPU9250SENSOR_H

@@ -292,24 +292,64 @@ void MPU9250Sensor::setAccelerometerOffset(double accel_x_offset, double accel_y
   accel_z_offset_ = accel_z_offset;
 }
 
+// void MPU9250Sensor::calibrate()
+// {
+//   int count = 0;
+//   while (count < CALIBRATION_COUNT) {
+//     gyro_x_offset_ += getAngularVelocityX();
+//     gyro_y_offset_ += getAngularVelocityY();
+//     gyro_z_offset_ += getAngularVelocityZ();
+//     accel_x_offset_ += getAccelerationX();
+//     accel_y_offset_ += getAccelerationY();
+//     accel_z_offset_ += getAccelerationZ();
+//     ++count;
+//   }
+//   gyro_x_offset_ /= CALIBRATION_COUNT;
+//   gyro_y_offset_ /= CALIBRATION_COUNT;
+//   gyro_z_offset_ /= CALIBRATION_COUNT;
+//   accel_x_offset_ /= CALIBRATION_COUNT;
+//   accel_y_offset_ /= CALIBRATION_COUNT;
+//   accel_z_offset_ /= CALIBRATION_COUNT;
+//   accel_z_offset_ -= GRAVITY;
+//   calibrated_ = true;
+// }
+
 void MPU9250Sensor::calibrate()
 {
-  int count = 0;
-  while (count < CALIBRATION_COUNT) {
-    gyro_x_offset_ += getAngularVelocityX();
-    gyro_y_offset_ += getAngularVelocityY();
-    gyro_z_offset_ += getAngularVelocityZ();
-    accel_x_offset_ += getAccelerationX();
-    accel_y_offset_ += getAccelerationY();
-    accel_z_offset_ += getAccelerationZ();
-    ++count;
+  // Optional: discard first 50 samples for sensor warm-up
+  for (int i = 0; i < 50; ++i) {
+    getAngularVelocityX(); 
+    getAngularVelocityY(); 
+    getAngularVelocityZ();
+    getAccelerationX(); 
+    getAccelerationY(); 
+    getAccelerationZ();
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
   }
-  gyro_x_offset_ /= CALIBRATION_COUNT;
-  gyro_y_offset_ /= CALIBRATION_COUNT;
-  gyro_z_offset_ /= CALIBRATION_COUNT;
-  accel_x_offset_ /= CALIBRATION_COUNT;
-  accel_y_offset_ /= CALIBRATION_COUNT;
-  accel_z_offset_ /= CALIBRATION_COUNT;
-  accel_z_offset_ -= GRAVITY;
+
+  double gx = 0, gy = 0, gz = 0;
+  double ax = 0, ay = 0, az = 0;
+
+  for (int i = 0; i < CALIBRATION_COUNT; ++i) {
+    gx += getAngularVelocityX();
+    gy += getAngularVelocityY();
+    gz += getAngularVelocityZ();
+
+    ax += getAccelerationX();
+    ay += getAccelerationY();
+    az += getAccelerationZ();
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(10)); // allow sensor time to update
+  }
+
+  gyro_x_offset_ = gx / CALIBRATION_COUNT;
+  gyro_y_offset_ = gy / CALIBRATION_COUNT;
+  gyro_z_offset_ = gz / CALIBRATION_COUNT;
+
+  accel_x_offset_ = ax / CALIBRATION_COUNT;
+  accel_y_offset_ = ay / CALIBRATION_COUNT;
+  accel_z_offset_ = az / CALIBRATION_COUNT - GRAVITY;
+
   calibrated_ = true;
 }
+
