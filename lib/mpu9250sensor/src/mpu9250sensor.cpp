@@ -318,10 +318,14 @@ void MPU9250Sensor::setAccelerometerOffset(double accel_x_offset, double accel_y
 
 void MPU9250Sensor::calibrate()
 {
-  // Optional warm-up
+  // Warm-up the imu
   for (int i = 0; i < 50; ++i) {
-    getAngularVelocityX(); getAngularVelocityY(); getAngularVelocityZ();
-    getAccelerationX(); getAccelerationY(); getAccelerationZ();
+    getAngularVelocityX(); 
+    getAngularVelocityY(); 
+    getAngularVelocityZ();
+    getAccelerationX(); 
+    getAccelerationY(); 
+    getAccelerationZ();
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
   }
 
@@ -345,8 +349,12 @@ void MPU9250Sensor::calibrate()
   };
 
   auto compute_variance = [](const std::vector<double>& v, double mean) {
-    double sq_sum = std::inner_product(v.begin(), v.end(), v.begin(), 0.0);
-    return sq_sum / v.size() - mean * mean;
+    if (v.empty()) return 0.0;
+    double accum = 0.0;
+    for (double x : v) {
+      accum += (x - mean) * (x - mean);
+    }
+    return accum / v.size();
   };
 
   // Compute means (biases)

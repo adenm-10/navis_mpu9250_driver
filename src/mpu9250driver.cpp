@@ -61,7 +61,21 @@ void MPU9250Driver::handleInput()
   // Calculate euler angles, convert to quaternion and store in message
   // message.orientation_covariance = {0};
   calculateOrientation(message);
-  
+
+  // Default covariance matrices
+  // message.angular_velocity_covariance = {
+  //   0.0025, 0, 0,
+  //   0, 0.0025, 0,
+  //   0, 0, 0.005
+  // };
+
+  // message.linear_acceleration_covariance = {
+  //   0.1, 0, 0,
+  //   0, 0.1, 0,
+  //   0, 0, 0.2
+  // };
+
+  // Calculated covariance matrices
   message.angular_velocity_covariance = {
     mpu9250_->gyro_x_cov_, 0, 0,
     0, mpu9250_->gyro_y_cov_, 0,
@@ -72,6 +86,13 @@ void MPU9250Driver::handleInput()
     mpu9250_->accel_x_cov_, 0, 0,
     0, mpu9250_->accel_y_cov_, 0,
     0, 0, mpu9250_->accel_z_cov_
+  };
+
+  // Just use default for orientation
+  message.orientation_covariance = {
+    0.01, 0, 0,
+    0, 0.01, 0,
+    0, 0, 0.01
   };
 
   publisher_->publish(message);
