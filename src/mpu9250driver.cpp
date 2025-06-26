@@ -46,18 +46,34 @@ void MPU9250Driver::handleInput()
   auto message = sensor_msgs::msg::Imu();
   message.header.stamp = this->get_clock()->now();
   message.header.frame_id = "imu_link";
+  
   // Direct measurements
-  message.linear_acceleration_covariance = {0};
+  // message.linear_acceleration_covariance = {0};
   message.linear_acceleration.x = mpu9250_->getAccelerationX();
   message.linear_acceleration.y = mpu9250_->getAccelerationY();
   message.linear_acceleration.z = mpu9250_->getAccelerationZ();
-  message.angular_velocity_covariance[0] = {0};
+  
+  // message.angular_velocity_covariance[0] = {0};
   message.angular_velocity.x = mpu9250_->getAngularVelocityX();
   message.angular_velocity.y = mpu9250_->getAngularVelocityY();
   message.angular_velocity.z = mpu9250_->getAngularVelocityZ();
+
   // Calculate euler angles, convert to quaternion and store in message
-  message.orientation_covariance = {0};
+  // message.orientation_covariance = {0};
   calculateOrientation(message);
+  
+  message.angular_velocity_covariance = {
+    mpu9250_->gyro_x_cov_, 0, 0,
+    0, mpu9250_->gyro_y_cov_, 0,
+    0, 0, mpu9250_->gyro_z_cov_
+  };
+  
+  message.linear_acceleration_covariance = {
+    mpu9250_->accel_x_cov_, 0, 0,
+    0, mpu9250_->accel_y_cov_, 0,
+    0, 0, mpu9250_->accel_z_cov_
+  };
+
   publisher_->publish(message);
 }
 

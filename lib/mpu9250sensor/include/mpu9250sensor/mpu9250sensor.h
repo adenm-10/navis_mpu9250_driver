@@ -24,6 +24,13 @@ class MPU9250Sensor {
     DLPF_5_HZ
   };
 
+  double gyro_x_cov_{0.0};
+  double gyro_y_cov_{0.0};
+  double gyro_z_cov_{0.0};
+  double accel_x_cov_{0.0};
+  double accel_y_cov_{0.0};
+  double accel_z_cov_{0.0};
+
   void printConfig() const;
   void printOffsets() const;
   void setGyroscopeRange(GyroRange range);
