@@ -22,6 +22,8 @@ add_subdirectory(lib)
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
+find_package(std_srvs REQUIRED)
 
 add_executable(${PROJECT_NAME} 
   src/mpu9250driver.cpp
@@ -29,6 +31,16 @@ add_executable(${PROJECT_NAME}
 
 add_executable(mpu9250_custom_imu_publisher 
   src/mpu9250_custom_imu_publisher.cpp
+)
+
+add_executable(odom_tracker_node 
+  src/odom_tracker_node.cpp
+)
+
+ament_target_dependencies(odom_tracker_node
+  rclcpp
+  nav_msgs
+  std_srvs
 )
 
 ament_target_dependencies(${PROJECT_NAME} 
@@ -46,6 +58,6 @@ target_include_directories(
   ${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                        $<INSTALL_INTERFACE:include>)
 
-install(TARGETS ${PROJECT_NAME} mpu9250_custom_imu_publisher DESTINATION lib/${PROJECT_NAME})
+install(TARGETS ${PROJECT_NAME} mpu9250_custom_imu_publisher odom_tracker_node DESTINATION lib/${PROJECT_NAME})
 install(DIRECTORY launch params DESTINATION share/${PROJECT_NAME}/)
 ament_package()
