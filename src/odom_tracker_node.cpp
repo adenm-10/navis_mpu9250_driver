@@ -3,6 +3,7 @@
 #include <cmath>
 #include <rclcpp/rclcpp.hpp>
 #include <nav_msgs/msg/odometry.hpp>
+#include <std_msgs/msg/float64.hpp>
 #include <std_srvs/srv/empty.hpp>
 
 using namespace std::chrono_literals;
@@ -26,6 +27,9 @@ public:
     reset_srv_ = this->create_service<std_srvs::srv::Empty>(
       "reset_distance",
       std::bind(&OdomTrackerNode::reset_callback, this, std::placeholders::_1, std::placeholders::_2));
+
+    // Create cumulative distance publisher
+    distance_pub_ = this->create_publisher<std_msgs::msg::Float64>("cumulative_distance", 10);
 
     RCLCPP_INFO(this->get_logger(), "Odometry tracker node started. Target distance: %.2f m", target_distance_m_);
   }
@@ -53,8 +57,13 @@ private:
       // Optionally, you can take action here (e.g., publish stop command)
     }
 
+    // Publish cumulative distance
+    auto distance_msg = std_msgs::msg::Float64();
+    distance_msg.data = cumulative_distance_;
+    distance_pub_->publish(distance_msg);
+
     last_time_ = current_time;
-    RCLCPP_INFO(this->get_logger(), "Cumulative Distance: %.2f m", cumulative_distance_);
+    // RCLCPP_INFO(this->get_logger(), "Cumulative Distance: %.2f m", cumulative_distance_);
   }
 
   void reset_callback(const std::shared_ptr<std_srvs::srv::Empty::Request>,
@@ -67,6 +76,7 @@ private:
 
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
   rclcpp::Service<std_srvs::srv::Empty>::SharedPtr reset_srv_;
+  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr distance_pub_;
 
   double cumulative_distance_;
   double target_distance_m_;
