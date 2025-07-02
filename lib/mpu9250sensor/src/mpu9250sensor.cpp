@@ -10,6 +10,9 @@ extern "C" {
 #include <vector>
 #include <numeric>
 
+#define _USE_MATH_DEFINES
+#include <cmath>
+
 MPU9250Sensor::MPU9250Sensor(std::unique_ptr<I2cCommunicator> i2cBus) : i2cBus_(std::move(i2cBus))
 {
   initImuI2c();
@@ -195,9 +198,10 @@ double MPU9250Sensor::getAngularVelocityX() const
   int16_t gyro_x = gyro_x_lsb | gyro_x_msb << 8;
   double gyro_x_converted = convertRawGyroscopeData(gyro_x);
   if (calibrated_) {
-    return gyro_x_converted - gyro_x_offset_;
+    gyro_x_converted -= gyro_x_offset_;
   }
-  return gyro_x_converted;
+  // Convert to radians/sec
+  return gyro_x_converted * M_PI / 180.0;
 }
 
 double MPU9250Sensor::getAngularVelocityY() const
@@ -207,9 +211,9 @@ double MPU9250Sensor::getAngularVelocityY() const
   int16_t gyro_y = gyro_y_lsb | gyro_y_msb << 8;
   double gyro_y_converted = convertRawGyroscopeData(gyro_y);
   if (calibrated_) {
-    return gyro_y_converted - gyro_y_offset_;
+    gyro_y_converted -= gyro_y_offset_;
   }
-  return gyro_y_converted;
+  return gyro_y_converted * M_PI / 180.0;
 }
 
 double MPU9250Sensor::getAngularVelocityZ() const
@@ -219,10 +223,11 @@ double MPU9250Sensor::getAngularVelocityZ() const
   int16_t gyro_z = gyro_z_lsb | gyro_z_msb << 8;
   double gyro_z_converted = convertRawGyroscopeData(gyro_z);
   if (calibrated_) {
-    return gyro_z_converted - gyro_z_offset_;
+    gyro_z_converted -= gyro_z_offset_;
   }
-  return gyro_z_converted;
+  return gyro_z_converted * M_PI / 180.0;
 }
+
 
 double MPU9250Sensor::getMagneticFluxDensityX() const
 {
