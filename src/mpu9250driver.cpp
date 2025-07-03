@@ -3,6 +3,9 @@
 #include <chrono>
 #include <memory>
 
+#define _USE_MATH_DEFINES
+#include <cmath>
+
 #include "LinuxI2cCommunicator.h"
 
 using namespace std::chrono_literals;
@@ -62,37 +65,42 @@ void MPU9250Driver::handleInput()
   // message.orientation_covariance = {0};
   calculateOrientation(message);
 
-  // Default covariance matrices
-  // message.angular_velocity_covariance = {
-  //   0.0025, 0, 0,
-  //   0, 0.0025, 0,
-  //   0, 0, 0.005
-  // };
+  // Convert to radians
+  message.angular_velocity.x *= (M_PI / 180.0);
+  message.angular_velocity.y *= (M_PI / 180.0);
+  message.angular_velocity.z *= (M_PI / 180.0);
 
-  // message.linear_acceleration_covariance = {
-  //   0.1, 0, 0,
-  //   0, 0.1, 0,
-  //   0, 0, 0.2
-  // };
+  // Default covariance matrices
+  message.angular_velocity_covariance = {
+    0.05, 0, 0,
+    0, 0.05, 0,
+    0, 0, 0.05
+  };
+
+  message.linear_acceleration_covariance = {
+    0.05, 0, 0,
+    0, 0.05, 0,
+    0, 0, 0.05
+  };
 
   // Calculated covariance matrices
-  message.angular_velocity_covariance = {
-    mpu9250_->gyro_x_cov_, 0, 0,
-    0, mpu9250_->gyro_y_cov_, 0,
-    0, 0, mpu9250_->gyro_z_cov_
-  };
+  // message.angular_velocity_covariance = {
+  //   mpu9250_->gyro_x_cov_, 0, 0,
+  //   0, mpu9250_->gyro_y_cov_, 0,
+  //   0, 0, mpu9250_->gyro_z_cov_
+  // };
   
-  message.linear_acceleration_covariance = {
-    mpu9250_->accel_x_cov_, 0, 0,
-    0, mpu9250_->accel_y_cov_, 0,
-    0, 0, mpu9250_->accel_z_cov_
-  };
+  // message.linear_acceleration_covariance = {
+  //   mpu9250_->accel_x_cov_, 0, 0,
+  //   0, mpu9250_->accel_y_cov_, 0,
+  //   0, 0, mpu9250_->accel_z_cov_
+  // };
 
   // Just use default for orientation
   message.orientation_covariance = {
-    0.01, 0, 0,
-    0, 0.01, 0,
-    0, 0, 0.01
+    0.05, 0, 0,
+    0, 0.05, 0,
+    0, 0, 0.05
   };
 
   publisher_->publish(message);

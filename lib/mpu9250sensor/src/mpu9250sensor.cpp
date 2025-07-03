@@ -10,9 +10,6 @@ extern "C" {
 #include <vector>
 #include <numeric>
 
-#define _USE_MATH_DEFINES
-#include <cmath>
-
 MPU9250Sensor::MPU9250Sensor(std::unique_ptr<I2cCommunicator> i2cBus) : i2cBus_(std::move(i2cBus))
 {
   initImuI2c();
@@ -201,7 +198,7 @@ double MPU9250Sensor::getAngularVelocityX() const
     gyro_x_converted -= gyro_x_offset_;
   }
   // Convert to radians/sec
-  return gyro_x_converted * M_PI / 180.0;
+  return gyro_x_converted;
 }
 
 double MPU9250Sensor::getAngularVelocityY() const
@@ -213,7 +210,7 @@ double MPU9250Sensor::getAngularVelocityY() const
   if (calibrated_) {
     gyro_y_converted -= gyro_y_offset_;
   }
-  return gyro_y_converted * M_PI / 180.0;
+  return gyro_y_converted;
 }
 
 double MPU9250Sensor::getAngularVelocityZ() const
@@ -225,7 +222,7 @@ double MPU9250Sensor::getAngularVelocityZ() const
   if (calibrated_) {
     gyro_z_converted -= gyro_z_offset_;
   }
-  return gyro_z_converted * M_PI / 180.0;
+  return gyro_z_converted;
 }
 
 
@@ -299,31 +296,9 @@ void MPU9250Sensor::setAccelerometerOffset(double accel_x_offset, double accel_y
   accel_z_offset_ = accel_z_offset;
 }
 
-// void MPU9250Sensor::calibrate()
-// {
-//   int count = 0;
-//   while (count < CALIBRATION_COUNT) {
-//     gyro_x_offset_ += getAngularVelocityX();
-//     gyro_y_offset_ += getAngularVelocityY();
-//     gyro_z_offset_ += getAngularVelocityZ();
-//     accel_x_offset_ += getAccelerationX();
-//     accel_y_offset_ += getAccelerationY();
-//     accel_z_offset_ += getAccelerationZ();
-//     ++count;
-//   }
-//   gyro_x_offset_ /= CALIBRATION_COUNT;
-//   gyro_y_offset_ /= CALIBRATION_COUNT;
-//   gyro_z_offset_ /= CALIBRATION_COUNT;
-//   accel_x_offset_ /= CALIBRATION_COUNT;
-//   accel_y_offset_ /= CALIBRATION_COUNT;
-//   accel_z_offset_ /= CALIBRATION_COUNT;
-//   accel_z_offset_ -= GRAVITY;
-//   calibrated_ = true;
-// }
-
 void MPU9250Sensor::calibrate()
 {
-  // Warm-up the imu
+
   for (int i = 0; i < 50; ++i) {
     getAngularVelocityX(); 
     getAngularVelocityY(); 
@@ -334,53 +309,87 @@ void MPU9250Sensor::calibrate()
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
   }
 
-  std::vector<double> gx_samples, gy_samples, gz_samples;
-  std::vector<double> ax_samples, ay_samples, az_samples;
-
-  for (int i = 0; i < CALIBRATION_COUNT; ++i) {
-    gx_samples.push_back(getAngularVelocityX());
-    gy_samples.push_back(getAngularVelocityY());
-    gz_samples.push_back(getAngularVelocityZ());
-
-    ax_samples.push_back(getAccelerationX());
-    ay_samples.push_back(getAccelerationY());
-    az_samples.push_back(getAccelerationZ());
-
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  int count = 0;
+  while (count < CALIBRATION_COUNT) {
+    gyro_x_offset_ += getAngularVelocityX();
+    gyro_y_offset_ += getAngularVelocityY();
+    gyro_z_offset_ += getAngularVelocityZ();
+    accel_x_offset_ += getAccelerationX();
+    accel_y_offset_ += getAccelerationY();
+    accel_z_offset_ += getAccelerationZ();
+    ++count;
   }
-
-  auto compute_mean = [](const std::vector<double>& v) {
-    return std::accumulate(v.begin(), v.end(), 0.0) / v.size();
-  };
-
-  auto compute_variance = [](const std::vector<double>& v, double mean) {
-    if (v.empty()) return 0.0;
-    double accum = 0.0;
-    for (double x : v) {
-      accum += (x - mean) * (x - mean);
-    }
-    return accum / v.size();
-  };
-
-  // Compute means (biases)
-  gyro_x_offset_ = compute_mean(gx_samples);
-  gyro_y_offset_ = compute_mean(gy_samples);
-  gyro_z_offset_ = compute_mean(gz_samples);
-
-  accel_x_offset_ = compute_mean(ax_samples);
-  accel_y_offset_ = compute_mean(ay_samples);
-  accel_z_offset_ = compute_mean(az_samples) - GRAVITY;
-
-  // Compute variances for covariance matrices
-  gyro_x_cov_ = compute_variance(gx_samples, gyro_x_offset_);
-  gyro_y_cov_ = compute_variance(gy_samples, gyro_y_offset_);
-  gyro_z_cov_ = compute_variance(gz_samples, gyro_z_offset_);
-
-  accel_x_cov_ = compute_variance(ax_samples, accel_x_offset_);
-  accel_y_cov_ = compute_variance(ay_samples, accel_y_offset_);
-  accel_z_cov_ = compute_variance(az_samples, accel_z_offset_ + GRAVITY);
-
+  gyro_x_offset_ /= CALIBRATION_COUNT;
+  gyro_y_offset_ /= CALIBRATION_COUNT;
+  gyro_z_offset_ /= CALIBRATION_COUNT;
+  accel_x_offset_ /= CALIBRATION_COUNT;
+  accel_y_offset_ /= CALIBRATION_COUNT;
+  accel_z_offset_ /= CALIBRATION_COUNT;
+  accel_z_offset_ -= GRAVITY;
   calibrated_ = true;
 }
+
+// void MPU9250Sensor::calibrate()
+// {
+//   // Warm-up the imu
+//   for (int i = 0; i < 50; ++i) {
+//     getAngularVelocityX(); 
+//     getAngularVelocityY(); 
+//     getAngularVelocityZ();
+//     getAccelerationX(); 
+//     getAccelerationY(); 
+//     getAccelerationZ();
+//     std::this_thread::sleep_for(std::chrono::milliseconds(10));
+//   }
+
+
+//   std::vector<double> gx_samples, gy_samples, gz_samples;
+//   std::vector<double> ax_samples, ay_samples, az_samples;
+
+//   for (int i = 0; i < CALIBRATION_COUNT; ++i) {
+//     gx_samples.push_back(getAngularVelocityX());
+//     gy_samples.push_back(getAngularVelocityY());
+//     gz_samples.push_back(getAngularVelocityZ());
+
+//     ax_samples.push_back(getAccelerationX());
+//     ay_samples.push_back(getAccelerationY());
+//     az_samples.push_back(getAccelerationZ());
+
+//     std::this_thread::sleep_for(std::chrono::milliseconds(10));
+//   }
+
+//   auto compute_mean = [](const std::vector<double>& v) {
+//     return std::accumulate(v.begin(), v.end(), 0.0) / v.size();
+//   };
+
+//   // auto compute_variance = [](const std::vector<double>& v, double mean) {
+//   //   if (v.empty()) return 0.0;
+//   //   double accum = 0.0;
+//   //   for (double x : v) {
+//   //     accum += (x - mean) * (x - mean);
+//   //   }
+//   //   return accum / v.size();
+//   // };
+
+//   // Compute means (biases)
+//   gyro_x_offset_ = compute_mean(gx_samples);
+//   gyro_y_offset_ = compute_mean(gy_samples);
+//   gyro_z_offset_ = compute_mean(gz_samples);
+
+//   accel_x_offset_ = compute_mean(ax_samples);
+//   accel_y_offset_ = compute_mean(ay_samples);
+//   accel_z_offset_ = compute_mean(az_samples) - GRAVITY;
+
+//   // Compute variances for covariance matrices
+//   // gyro_x_cov_ = compute_variance(gx_samples, gyro_x_offset_);
+//   // gyro_y_cov_ = compute_variance(gy_samples, gyro_y_offset_);
+//   // gyro_z_cov_ = compute_variance(gz_samples, gyro_z_offset_);
+
+//   // accel_x_cov_ = compute_variance(ax_samples, accel_x_offset_);
+//   // accel_y_cov_ = compute_variance(ay_samples, accel_y_offset_);
+//   // accel_z_cov_ = compute_variance(az_samples, accel_z_offset_ + GRAVITY);
+
+//   calibrated_ = true;
+// }
 
 
