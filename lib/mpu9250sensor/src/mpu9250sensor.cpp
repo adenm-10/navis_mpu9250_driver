@@ -197,7 +197,6 @@ double MPU9250Sensor::getAngularVelocityX() const
   if (calibrated_) {
     gyro_x_converted -= gyro_x_offset_;
   }
-  // Convert to radians/sec
   return gyro_x_converted;
 }
 
